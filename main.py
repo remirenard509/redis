@@ -121,6 +121,14 @@ def create_parser():
     benchmark_parser = commands.add_parser("benchmark", help="mesure les performances de RedisJSON")
     benchmark_parser.add_argument("--rows", type=positive_int, default=1000)
     benchmark_parser.add_argument("--batch-size", type=positive_int, default=BATCH_SIZE)
+
+    compare_parser = commands.add_parser("compare", help="compare Redis et PostgreSQL sur les mêmes données")
+    compare_parser.add_argument("--rows", type=positive_int, default=10000)
+    compare_parser.add_argument("--batch-size", type=positive_int, default=BATCH_SIZE)
+    compare_parser.add_argument("--clients", type=positive_int, nargs="+", default=[1, 8, 32])
+    compare_parser.add_argument("--duration", type=positive_int, default=3)
+    compare_parser.add_argument("--runs", type=positive_int, default=3)
+    compare_parser.add_argument("--output", type=Path)
     return parser
 
 
@@ -145,6 +153,10 @@ def main():
         print(json.dumps(records, ensure_ascii=False, indent=2))
     elif args.command == "benchmark":
         benchmark(client, args.rows, args.batch_size)
+    elif args.command == "compare":
+        from compare import compare  # psycopg n'est requis que pour cette commande
+
+        compare(client, args.rows, args.batch_size, args.clients, args.duration, args.runs, args.output)
 
 
 if __name__ == "__main__":

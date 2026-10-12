@@ -76,6 +76,37 @@ Pour un essai rapide, utilise par exemple `--rows 10`. Le benchmark prend des li
 
 Les mesures dépendent de la machine, de la charge et de la connexion à Redis.
 
+## Comparer Redis et PostgreSQL
+
+Le benchmark ci-dessus compare Redis à lui-même (séquentiel contre pipeline). Pour mesurer ce que Redis apporte face à une base classique, `compare` charge les mêmes lignes dans PostgreSQL (table `obscop2025`, colonne `jsonb`, clé primaire `id`) et interroge les deux bases avec le même client Python.
+
+Démarre un PostgreSQL dédié la première fois :
+
+```bash
+docker run -d --name obscop-pg -p 5434:5432 \
+  -e POSTGRES_USER=obscop -e POSTGRES_PASSWORD=obscop -e POSTGRES_DB=obscop \
+  postgres:16 -c shared_buffers=256MB -c synchronous_commit=off \
+  -c shared_preload_libraries=pg_stat_statements -c max_connections=200
+docker exec obscop-pg psql -U obscop -d obscop -c 'CREATE EXTENSION IF NOT EXISTS pg_stat_statements'
+```
+
+`synchronous_commit=off` aligne la durabilité sur celle de Redis par défaut : un commit n’attend pas l’écriture sur disque.
+
+Puis lance la comparaison :
+
+```bash
+python main.py compare --rows 10000 --clients 1 8 32 --duration 3 --runs 3 --output resultats.json
+```
+
+Elle réimporte tout le CSV dans les deux bases (pipeline `JSON.SET` pour Redis, `COPY` pour PostgreSQL) puis mesure :
+
+1. l’import complet ;
+2. la lecture par clé avec un client : latences p50/p95/p99, débit, lecture par lots (`pipeline` contre `WHERE id = ANY(...)`) et temps passé côté serveur (`INFO commandstats`, `pg_stat_statements`) ;
+3. la lecture par clé avec plusieurs clients en parallèle ;
+4. Redis en cache devant une requête PostgreSQL coûteuse (préoccupations par pays, question A1BIS).
+
+Par défaut, le script se connecte à `postgresql://obscop:obscop@localhost:5434/obscop` ; définis `POSTGRES_URL` pour en changer.
+
 ## Configuration Redis
 
 Par défaut, le script se connecte à `redis://localhost:6379`. Pour utiliser une autre adresse, définis `REDIS_URL` dans le terminal avant de lancer le script :
