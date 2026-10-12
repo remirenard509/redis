@@ -1,37 +1,48 @@
+import csv
 import json
 import os
 from pathlib import Path
-from urllib.parse import quote
 
 import redis
 
 
-DATA_FILE = Path(__file__).resolve().parent / "resultats-elections-legislatives-tour2.json"
+DATA_FILE = Path(__file__).resolve().parent / "ObsCop2025.csv"
 REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379")
+BATCH_SIZE = 500
 
 
-def redis_key(record):
-    candidate = quote(str(record["CANDIDAT"]), safe="")
-    return (
-        f"election:{record['CODE_ELECTION']}:tour:{record['NUMRO_TOUR']}"
-        f":lieu:{record['NUMERO_LIEU']}:candidat:{candidate}"
-    )
+def redis_key(row_number):
+    return f"obscop2025:row:{row_number}"
 
 
 def main():
-    with DATA_FILE.open(encoding="utf-8") as data_file:
-        records = json.load(data_file)
-
-    if not isinstance(records, list):
-        raise ValueError(f"Le fichier {DATA_FILE.name} doit contenir une liste de résultats.")
-
     client = redis.Redis.from_url(REDIS_URL, decode_responses=True)
     client.ping()
 
-    for record in records:
-        client.json().set(redis_key(record), "$", record)
+    imported_count = 0
+    pipeline = client.pipeline(transaction=False)
 
-    print(f"{len(records)} résultats importés dans Redis.")
+    with DATA_FILE.open(encoding="utf-8-sig", newline="") as data_file:
+        records = csv.DictReader(data_file, delimiter=";")
+        if records.fieldnames is None:
+            raise ValueError(f"Le fichier {DATA_FILE.name} ne contient pas d'en-tête CSV.")
+
+        for row_number, record in enumerate(records, start=1):
+            pipeline.execute_command(
+                "JSON.SET",
+                redis_key(row_number),
+                "$",
+                json.dumps(record, ensure_ascii=False),
+            )
+            imported_count += 1
+
+            if imported_count % BATCH_SIZE == 0:
+                pipeline.execute()
+
+    if imported_count % BATCH_SIZE:
+        pipeline.execute()
+
+    print(f"{imported_count} lignes importées depuis {DATA_FILE.name} dans Redis.")
 
 
 if __name__ == "__main__":
