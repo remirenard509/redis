@@ -1,0 +1,630 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Redis — Question 4</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Schibsted+Grotesk:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&display=block" rel="stylesheet">
+<style>
+  :root {
+    --paper: #F6F4EF;
+    --paper-2: #EEEBE3;
+    --ink: #17150F;
+    --ink-2: #4A463E;
+    --muted: #8B8579;
+    --rule: #DCD8CE;
+    --grid: #E4E0D7;
+    --red: #C8332B;
+    --red-wash: #F4DEDA;
+    --blue: #1F6FA8;
+    --gray: #A39E92;
+    --sans: "Schibsted Grotesk", system-ui, sans-serif;
+    --mono: "JetBrains Mono", ui-monospace, monospace;
+  }
+  @page { size: 1280px 720px; margin: 0; }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; background: var(--paper); color: var(--ink);
+    font-family: var(--sans); font-size: 17px; line-height: 1.45;
+    -webkit-print-color-adjust: exact; print-color-adjust: exact;
+    font-kerning: normal;
+  }
+  @media screen {
+    body { background: #D9D5CB; padding: 32px 0; }
+    .slide { margin: 0 auto 32px; box-shadow: 0 1px 3px rgba(0,0,0,.12); }
+  }
+  .slide {
+    width: 1280px; height: 720px; position: relative; overflow: hidden;
+    background: var(--paper); padding: 0 72px;
+    break-after: page; page-break-after: always;
+  }
+  .slide:last-child { break-after: auto; page-break-after: auto; }
+
+  /* chrome */
+  .top {
+    height: 64px; display: flex; align-items: flex-end; justify-content: space-between;
+    padding-bottom: 12px; border-bottom: 1px solid var(--rule);
+    font: 500 11.5px/1 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted);
+  }
+  .top b { color: var(--ink); font-weight: 600; }
+  .foot {
+    position: absolute; left: 72px; right: 72px; bottom: 26px;
+    display: flex; justify-content: space-between;
+    font: 400 11px/1 var(--mono); color: var(--muted); letter-spacing: .02em;
+  }
+  h2 {
+    font: 700 42px/1.06 var(--sans); letter-spacing: -.022em; margin: 36px 0 0; max-width: 1136px;
+  }
+  h2 em { font-style: normal; color: var(--red); }
+  .lead { font-size: 19px; line-height: 1.5; color: var(--ink-2); margin: 14px 0 0; max-width: 960px; }
+  .mono { font-family: var(--mono); }
+  .label {
+    font: 600 11px/1 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted);
+  }
+  code, .code { font-family: var(--mono); font-size: .86em; }
+  .nb { white-space: nowrap; }
+
+  /* ---------- 1. cover ---------- */
+  .cover { display: grid; grid-template-rows: 64px 1fr auto; }
+  .cover .top { border-bottom: 0; }
+  .cover-main { display: grid; grid-template-columns: 1fr 420px; align-items: end; padding-bottom: 72px; }
+  .cover h1 {
+    font: 800 212px/.82 var(--sans); letter-spacing: -.055em; margin: 0 0 0 -10px;
+  }
+  .cover h1 span { color: var(--red); }
+  .cover .q { margin: 0 0 6px; padding: 0; list-style: none; border-top: 1px solid var(--ink); }
+  .cover .q li {
+    display: grid; grid-template-columns: 44px 1fr; padding: 14px 0; border-bottom: 1px solid var(--rule);
+    font: 500 20px/1.3 var(--sans);
+  }
+  .cover .q li span { font: 500 13px/1.9 var(--mono); color: var(--muted); }
+  .cover-bottom {
+    display: flex; justify-content: space-between; align-items: flex-end;
+    border-top: 1px solid var(--rule); padding: 18px 0 30px;
+    font: 400 13px/1.6 var(--mono); color: var(--ink-2);
+  }
+  .term .p { color: var(--muted); }
+  .term .pong { color: var(--red); font-weight: 600; }
+
+  /* ---------- 2. what ---------- */
+  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 64px; margin-top: 36px; }
+  .facts { margin: 0; padding: 0; list-style: none; border-top: 1px solid var(--ink); }
+  .facts li { display: grid; grid-template-columns: 150px 1fr; gap: 16px; padding: 13px 0; border-bottom: 1px solid var(--rule); font-size: 16px; line-height: 1.42; }
+  .facts li .label { line-height: 1.6; color: var(--ink); }
+  .kv { width: 100%; border-collapse: collapse; font: 400 14px/1.3 var(--mono); }
+  .kv th { text-align: left; font: 600 11px/1 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); padding: 0 0 10px; border-bottom: 1px solid var(--ink); }
+  .kv td { padding: 12px 12px 12px 0; border-bottom: 1px solid var(--rule); vertical-align: top; white-space: nowrap; }
+  .kv td:nth-child(2) { color: var(--muted); font-size: 12.5px; }
+  .kv tr.ours td { background: var(--red-wash); }
+  .kv tr.ours td:first-child { box-shadow: inset 3px 0 0 var(--red); padding-left: 10px; }
+  .kv-note { margin-top: 14px; font-size: 14.5px; color: var(--ink-2); }
+
+  /* ---------- 3. why ---------- */
+  .reasons { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0; margin-top: 48px; border-top: 1px solid var(--ink); }
+  .reason { padding: 18px 28px 0 0; display: flex; flex-direction: column; }
+  .reason + .reason { padding-left: 24px; border-left: 1px solid var(--rule); }
+  .reason .n { font: 500 13px/1 var(--mono); color: var(--red); }
+  .reason h3 { font: 700 24px/1.15 var(--sans); letter-spacing: -.01em; margin: 14px 0 10px; }
+  .reason p { margin: 0 0 20px; font-size: 16.5px; line-height: 1.5; color: var(--ink-2); }
+  .reason .cmd { margin-top: auto; font: 400 13px/1.5 var(--mono); color: var(--ink); background: var(--paper-2); padding: 8px 10px; border-radius: 3px; }
+  .limits {
+    position: absolute; left: 72px; right: 72px; bottom: 66px;
+    display: grid; grid-template-columns: 120px 1fr; gap: 24px; align-items: baseline;
+    border-top: 1px solid var(--ink); padding-top: 16px;
+  }
+  .limits p { margin: 0; font-size: 16px; color: var(--ink-2); }
+  .limits strong { color: var(--ink); font-weight: 600; }
+
+  /* ---------- 4. examples ---------- */
+  .uses { display: grid; grid-template-columns: repeat(3, 1fr); column-gap: 40px; row-gap: 44px; margin-top: 44px; }
+  .use { border-top: 1px solid var(--ink); padding-top: 13px; }
+  .use h3 { font: 700 19px/1.2 var(--sans); margin: 0; display: flex; justify-content: space-between; align-items: baseline; }
+  .use h3 span { font: 500 11px/1 var(--mono); color: var(--muted); letter-spacing: .06em; }
+  .use p { margin: 8px 0 14px; font-size: 15px; line-height: 1.45; color: var(--ink-2); min-height: 44px; }
+  .use pre { margin: 0; font: 400 13px/1.65 var(--mono); background: var(--paper-2); padding: 11px 14px; border-radius: 3px; white-space: pre; }
+  .use pre i { font-style: normal; color: var(--muted); }
+
+  /* ---------- 5. project ---------- */
+  .proj { display: grid; grid-template-columns: 480px 1fr; gap: 56px; margin-top: 32px; }
+  .stats3 { display: grid; grid-template-columns: repeat(3, 1fr); border-top: 1px solid var(--ink); border-bottom: 1px solid var(--rule); margin-top: 22px; }
+  .stats3 div { padding: 12px 0 13px; }
+  .stats3 div + div { padding-left: 18px; border-left: 1px solid var(--rule); }
+  .stats3 b { display: block; font: 700 28px/1.1 var(--sans); letter-spacing: -.02em; }
+  .stats3 span { font-size: 13.5px; color: var(--muted); }
+  .flow { margin-top: 24px; display: grid; gap: 0; }
+  .flow .step { display: grid; grid-template-columns: 26px 1fr; gap: 10px; align-items: baseline; padding: 7px 0; font-size: 15px; color: var(--ink-2); }
+  .flow .step .k { font: 500 12px/1 var(--mono); color: var(--red); }
+  .flow code { color: var(--ink); background: var(--paper-2); padding: 1px 5px; border-radius: 3px; }
+  .codeblock { margin: 0; font: 400 13px/1.58 var(--mono); background: var(--ink); color: #E9E5DB; padding: 18px 20px; border-radius: 4px; white-space: pre; }
+  .codeblock .c { color: #8D877A; }
+  .codeblock .s { color: #E8A79F; }
+  .codeblock .h { color: #fff; font-weight: 600; }
+  .cap { font: 500 11px/1 var(--mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); margin: 0 0 9px; display: flex; justify-content: space-between; }
+  .out { margin: 14px 0 0; font: 400 12.5px/1.55 var(--mono); background: var(--paper-2); padding: 14px 18px; border-radius: 4px; white-space: pre; color: var(--ink-2); }
+  .out .p { color: var(--muted); }
+  .out b { color: var(--ink); font-weight: 600; }
+
+  /* ---------- 6. results ---------- */
+  .res { display: grid; grid-template-columns: 520px 1fr; gap: 56px; margin-top: 30px; }
+  .chart-title { font: 600 15px/1.3 var(--sans); margin: 0; }
+  .chart-sub { font-size: 13px; color: var(--muted); margin: 2px 0 10px; }
+  table.bench { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+  table.bench th { font: 600 11px/1.3 var(--mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); text-align: right; padding: 0 0 10px; border-bottom: 1px solid var(--ink); vertical-align: bottom; }
+  table.bench th:first-child { text-align: left; }
+  table.bench th i { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 6px; vertical-align: 0; }
+  table.bench td { text-align: right; padding: 11px 0; border-bottom: 1px solid var(--rule); font: 500 17px/1.2 var(--sans); }
+  table.bench td small { display: block; font: 400 12px/1.4 var(--mono); color: var(--muted); margin-top: 3px; }
+  table.bench td:first-child { text-align: left; font: 500 14px/1.2 var(--mono); }
+  table.bench td.gain { font-weight: 700; }
+  .tiles { position: absolute; left: 72px; right: 72px; bottom: 62px; display: grid; grid-template-columns: repeat(3, 1fr); border-top: 1px solid var(--ink); }
+  .tile { padding: 14px 24px 0 0; }
+  .tile + .tile { padding-left: 24px; border-left: 1px solid var(--rule); }
+  .tile .label { display: block; margin-bottom: 8px; }
+  .tile .v { font: 700 34px/1 var(--sans); letter-spacing: -.025em; }
+  .tile .v small { font-size: 17px; font-weight: 600; letter-spacing: -.01em; }
+  .tile p { margin: 6px 0 0; font-size: 13.5px; color: var(--ink-2); }
+
+  /* ---------- 6. redis seul ---------- */
+  .split .txt { margin: 14px 0 0; font-size: 15.5px; line-height: 1.5; color: var(--ink-2); }
+  .split .txt strong { color: var(--ink); font-weight: 600; }
+  .split svg { margin-top: 6px; }
+
+  /* ---------- 7. redis vs postgres ---------- */
+  .vs { display: grid; grid-template-columns: 460px 1fr; gap: 60px; margin-top: 28px; }
+  table.vs-table td { padding: 10px 0; font-size: 16.5px; }
+  table.vs-table td:first-child { font: 400 15px/1.3 var(--sans); color: var(--ink-2); }
+  table.vs-table td small { display: inline; margin: 0 0 0 6px; font-size: 11px; }
+  table.vs-table th { font-size: 12px; }
+  .legend { display: flex; gap: 20px; font-size: 13px; color: var(--ink-2); margin: 0 0 8px; }
+  .legend span { display: inline-flex; align-items: center; gap: 7px; }
+  .legend i.sq { width: 10px; height: 10px; border-radius: 2px; display: inline-block; }
+  .note { font-size: 14.5px; line-height: 1.5; color: var(--ink-2); margin: 8px 0 0; }
+  .note strong { color: var(--ink); font-weight: 600; }
+
+  /* ---------- 8. cache ---------- */
+  .cache { display: grid; grid-template-columns: 560px 1fr; gap: 56px; margin-top: 30px; }
+  .big-gain { border-top: 1px solid var(--ink); margin-top: 22px; padding-top: 14px; display: grid; grid-template-columns: auto 1fr; gap: 18px; align-items: center; }
+  .big-gain b { font: 800 56px/1 var(--sans); letter-spacing: -.04em; color: var(--ink); }
+  .big-gain span { font-size: 14.5px; color: var(--ink-2); line-height: 1.4; }
+  .cache .note { margin-top: 14px; }
+
+  /* ---------- 8. summary ---------- */
+  .sum { display: grid; grid-template-columns: repeat(3, 1fr); margin-top: 40px; border-top: 1px solid var(--ink); }
+  .sum > div { padding: 18px 30px 0 0; display: flex; flex-direction: column; min-height: 310px; }
+  .sum > div + div { padding-left: 28px; border-left: 1px solid var(--rule); }
+  .sum .n { font: 500 13px/1 var(--mono); color: var(--red); }
+  .sum h3 { font: 700 25px/1.15 var(--sans); margin: 12px 0 12px; letter-spacing: -.01em; }
+  .sum p { margin: 0 0 16px; font-size: 17px; line-height: 1.5; color: var(--ink-2); }
+  .sum p strong { color: var(--ink); font-weight: 600; }
+  .sum .key { margin-top: auto; border-top: 1px solid var(--rule); padding-top: 12px; font: 500 13px/1.5 var(--mono); color: var(--ink); }
+  .sum .key span { display: block; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
+  .conditions {
+    position: absolute; left: 72px; right: 72px; bottom: 62px;
+    border-top: 1px solid var(--rule); padding-top: 14px;
+    display: grid; grid-template-columns: 170px 1fr; gap: 20px;
+    font-size: 13.5px; color: var(--ink-2); line-height: 1.55;
+  }
+  .conditions .label { line-height: 1.7; }
+
+  svg text { font-family: var(--sans); }
+  svg .tick { font: 400 11px var(--mono); fill: var(--muted); }
+  svg .lab { font-size: 13.5px; fill: var(--ink-2); }
+  svg .val { font-size: 14px; font-weight: 600; fill: var(--ink); }
+  svg .valsm { font: 400 11.5px var(--mono); fill: var(--muted); }
+</style>
+</head>
+<body>
+
+<!-- 1 · Couverture -->
+<section class="slide cover">
+  <div class="top"><span><b>Question 4</b> · Bases de données NoSQL</span><span>ObsCop 2025 × Redis</span></div>
+  <div class="cover-main">
+    <h1>Redis<span>.</span></h1>
+    <ol class="q">
+      <li><span>01</span>Qu’est-ce que Redis&#8239;?</li>
+      <li><span>02</span>Pourquoi l’utilise-t-on&#8239;?</li>
+      <li><span>03</span>Des exemples — et un vrai test face à PostgreSQL sur nos données</li>
+    </ol>
+  </div>
+  <div class="cover-bottom">
+    <div class="term"><span class="p">$</span> docker exec redis-stack redis-cli ping<br><span class="pong">PONG</span></div>
+    <div style="text-align:right">Redis Stack 7.4 · PostgreSQL 16 · Python<br>Mesures du 12 octobre 2026</div>
+  </div>
+</section>
+
+<!-- 2 · Qu'est-ce que Redis -->
+<section class="slide">
+  <div class="top"><span><b>01</b> · Qu’est-ce que Redis&#8239;?</span><span>Redis — Question 4</span></div>
+  <h2>Une base de données clé-valeur qui vit <em>en mémoire vive</em></h2>
+  <p class="lead">Redis (<i>REmote DIctionary Server</i>) range chaque donnée sous une clé unique et garde tout en RAM. Créé en 2009 par Salvatore Sanfilippo, c’est l’une des bases NoSQL les plus répandues.</p>
+  <div class="two">
+    <ul class="facts">
+      <li><span class="label">En mémoire</span><span>Les lectures ne touchent pas le disque&#8239;: une commande s’exécute en quelques microsecondes côté serveur.</span></li>
+      <li><span class="label">Typée</span><span>Une valeur peut être une chaîne, un hash, une liste, un ensemble trié, un stream… ou un document JSON avec Redis Stack.</span></li>
+      <li><span class="label">Persistante<br>si on le veut</span><span>Snapshots périodiques (RDB) et/ou journal des écritures (AOF) sur disque.</span></li>
+      <li><span class="label">Distribuable</span><span>Réplication, bascule automatique (Sentinel), partitionnement (Cluster).</span></li>
+    </ul>
+    <div>
+      <table class="kv">
+        <thead><tr><th>Clé</th><th>Type</th><th>Valeur</th></tr></thead>
+        <tbody>
+          <tr><td>cache:produits:42</td><td>string</td><td>"{…réponse SQL…}"</td></tr>
+          <tr><td>session:8f3a</td><td>hash</td><td>user_id=42 · panier=3</td></tr>
+          <tr><td>jobs:emails</td><td>list</td><td>[job3, job2, job1]</td></tr>
+          <tr><td>classement</td><td>sorted set</td><td>alice 320 · bob 280</td></tr>
+          <tr class="ours"><td>obscop2025:row:1</td><td>JSON</td><td>{"Réponse": "Le chômage", …}</td></tr>
+        </tbody>
+      </table>
+      <p class="kv-note">Un seul serveur, plusieurs structures. La dernière ligne est le format de notre projet&#8239;: une clé par ligne du CSV, la valeur est un document JSON.</p>
+    </div>
+  </div>
+  <div class="foot"><span>Redis — Question 4</span><span>02 / 09</span></div>
+</section>
+
+<!-- 3 · Pourquoi -->
+<section class="slide">
+  <div class="top"><span><b>02</b> · Pourquoi l’utilise-t-on&#8239;?</span><span>Redis — Question 4</span></div>
+  <h2>Parce qu’il est rapide, simple, et fait <em>plus qu’un cache</em></h2>
+  <div class="reasons">
+    <div class="reason">
+      <span class="n">01</span>
+      <h3>Vitesse</h3>
+      <p>Tout est en RAM&#8239;: 3,8&nbsp;µs de travail par lecture côté serveur. L’écart le plus net est en écriture&#8239;: une mise à jour ×5 plus rapide que PostgreSQL (1 client).</p>
+      <div class="cmd">JSON.GET obscop2025:row:1</div>
+    </div>
+    <div class="reason">
+      <span class="n">02</span>
+      <h3>Calcul côté serveur</h3>
+      <p>Redis sait incrémenter, trier, empiler. Ces commandes sont atomiques&#8239;: pas de «&#8239;lire, modifier, réécrire&#8239;» dans l’application.</p>
+      <div class="cmd">ZINCRBY classement 10 alice</div>
+    </div>
+    <div class="reason">
+      <span class="n">03</span>
+      <h3>Expiration intégrée</h3>
+      <p>Chaque clé peut avoir une durée de vie (TTL). Idéal pour un cache, une session ou un code à usage unique.</p>
+      <div class="cmd">SET otp:42 "839201" EX 300</div>
+    </div>
+    <div class="reason">
+      <span class="n">04</span>
+      <h3>Simple à adopter</h3>
+      <p>Protocole texte, clients dans tous les langages (redis-py ici), démarrage en une commande Docker.</p>
+      <div class="cmd">docker run -p 6379:6379 …</div>
+    </div>
+  </div>
+  <div class="limits">
+    <span class="label" style="color:var(--ink)">Les limites</span>
+    <p>Les données doivent <strong>tenir en RAM</strong> · <strong>un seul cœur</strong> exécute les commandes · pas de SQL ni de jointures · la durabilité dépend de la persistance configurée. Redis vient donc le plus souvent <strong>en complément</strong> d’une base principale, pas à sa place.</p>
+  </div>
+  <div class="foot"><span>Redis — Question 4</span><span>03 / 09</span></div>
+</section>
+
+<!-- 4 · Exemples d'usage -->
+<section class="slide">
+  <div class="top"><span><b>03</b> · Exemples</span><span>Redis — Question 4</span></div>
+  <h2>Six usages classiques, <em>deux commandes</em> chacun</h2>
+  <div class="uses">
+    <div class="use">
+      <h3>Cache <span>STRING + TTL</span></h3>
+      <p>Garder 60&nbsp;s le résultat d’une requête SQL ou d’une API lente.</p>
+<pre>SET cache:produits:42 "{…}" EX 60
+GET cache:produits:42</pre>
+    </div>
+    <div class="use">
+      <h3>Sessions <span>HASH</span></h3>
+      <p>Session web partagée par plusieurs serveurs, supprimée après 30&nbsp;min.</p>
+<pre>HSET session:8f3a user_id 42 panier 3
+EXPIRE session:8f3a 1800</pre>
+    </div>
+    <div class="use">
+      <h3>Limitation de débit <span>INCR</span></h3>
+      <p>Au plus 100 requêtes par minute et par adresse IP.</p>
+<pre>INCR rl:203.0.113.7    <i># → 1, 2, 3…</i>
+EXPIRE rl:203.0.113.7 60</pre>
+    </div>
+    <div class="use">
+      <h3>Classement <span>SORTED SET</span></h3>
+      <p>Scores d’un jeu, articles les plus lus, mis à jour en temps réel.</p>
+<pre>ZINCRBY classement 10 alice
+ZREVRANGE classement 0 9 WITHSCORES</pre>
+    </div>
+    <div class="use">
+      <h3>File de tâches <span>LIST</span></h3>
+      <p>Envoi d’e-mails en arrière-plan. Sidekiq, BullMQ ou Celery peuvent s’appuyer sur Redis.</p>
+<pre>LPUSH jobs:emails "{to: …}"
+BRPOP jobs:emails 0   <i># bloque, attend</i></pre>
+    </div>
+    <div class="use">
+      <h3>Temps réel <span>PUB/SUB</span></h3>
+      <p>Chat, notifications&#8239;: les abonnés reçoivent chaque message instantanément.</p>
+<pre>SUBSCRIBE chat:general
+PUBLISH chat:general "Bonjour"</pre>
+    </div>
+  </div>
+  <div class="foot"><span>Redis — Question 4</span><span>04 / 09</span></div>
+</section>
+
+<!-- 5 · Notre projet -->
+<section class="slide">
+  <div class="top"><span><b>03</b> · Exemple concret&#8239;: notre projet</span><span>Redis — Question 4</span></div>
+  <h2>ObsCop 2025&#8239;: une enquête climat dans <em>RedisJSON</em></h2>
+  <div class="proj">
+    <div>
+      <p class="lead" style="font-size:17px;margin-top:0">Enquête internationale d’opinion sur le changement climatique&#8239;: 30 pays, 4 thématiques (préoccupations, perception, mobilisation des acteurs, gestes du quotidien).</p>
+      <div class="stats3">
+        <div><b>146&nbsp;275</b><span>lignes</span></div>
+        <div><b>21</b><span>colonnes</span></div>
+        <div><b>98&nbsp;Mo</b><span>de CSV</span></div>
+      </div>
+      <div class="flow">
+        <div class="step"><span class="k">1</span><span>Lecture du CSV (UTF-8, séparateur <code>;</code>) avec <code>csv.DictReader</code></span></div>
+        <div class="step"><span class="k">2</span><span>Chaque ligne → un document JSON sous la clé <code>obscop2025:row:&lt;n&gt;</code></span></div>
+        <div class="step"><span class="k">3</span><span>Écriture par <b>pipeline</b>&#8239;: 500 <code>JSON.SET</code> envoyés en un seul <span class="nb">aller-retour</span></span></div>
+        <div class="step"><span class="k">4</span><span>Lecture directe par clé&#8239;: <code>get 1</code>, <code>list --start 1 --limit 10</code></span></div>
+        <div class="step"><span class="k">5</span><span>Mêmes lignes chargées dans PostgreSQL pour comparer&#8239;: <code>python main.py compare</code></span></div>
+      </div>
+    </div>
+    <div>
+      <div class="cap"><span>main.py · import (extrait simplifié)</span><span>python main.py import</span></div>
+<pre class="codeblock">pipeline = client.<span class="h">pipeline</span>(transaction=False)
+for n, record in enumerate(records, start=1):
+    pipeline.execute_command(
+        <span class="s">"JSON.SET"</span>, <span class="s">f"obscop2025:row:{n}"</span>, <span class="s">"$"</span>,
+        json.dumps(record, ensure_ascii=False),
+    )
+    if n % BATCH_SIZE == 0:        <span class="c"># BATCH_SIZE = 500</span>
+        pipeline.<span class="h">execute</span>()         <span class="c"># 1 aller-retour / 500 lignes</span></pre>
+<pre class="out"><span class="p">$ python main.py get 1</span>
+{ <b>"Périmètre spatial"</b>: "Monde",
+  <b>"Question"</b>: "A1BIS. Parmi cette liste, quels sont les sujets…",
+  <b>"Réponse"</b>: "Le chômage",  <b>"Valeur"</b>: "38",  <b>"Unité"</b>: "%",
+  <b>"Echantillon"</b>: "23503",  … 21 champs }</pre>
+    </div>
+  </div>
+  <div class="foot"><span>Redis — Question 4</span><span>05 / 09</span></div>
+</section>
+
+<!-- 6 · Redis seul -->
+<section class="slide">
+  <div class="top"><span><b>03</b> · Résultats — Redis seul</span><span>Redis — Question 4</span></div>
+  <h2>Notre premier benchmark mesurait surtout <em>le réseau</em></h2>
+  <div class="res">
+    <div>
+      <p class="chart-title">Débit sur 100&nbsp;000 lignes</p>
+      <p class="chart-sub">opérations par seconde · lots de 500 · médiane de 3 passes</p>
+      <svg id="bars" width="520" height="236" role="img" aria-label="Débit en opérations par seconde sur 100 000 lignes"></svg>
+    </div>
+    <div class="split">
+      <p class="chart-title">Où passent les 93&nbsp;µs d’une lecture&#8239;?</p>
+      <p class="chart-sub">latence médiane côté client · travail mesuré par <code>INFO commandstats</code></p>
+      <svg id="split" width="560" height="78" role="img" aria-label="Décomposition du temps d’une lecture"></svg>
+      <p class="txt">Redis ne travaille que <strong>3,8&nbsp;µs</strong> par lecture. Le reste, c’est l’aller-retour réseau et le client Python. Le pipeline (×12,9) supprime cette attente&#8239;: il ne rend pas Redis plus rapide.</p>
+      <p class="txt">La preuve&#8239;: PostgreSQL gagne autant en lisant par lots de 500 (<code>WHERE id = ANY(…)</code>)&#8239;: <strong>156&nbsp;756/s</strong>, contre <strong>147&nbsp;363/s</strong> pour Redis en pipeline.</p>
+    </div>
+  </div>
+  <div class="tiles">
+    <div class="tile"><span class="label">Import complet</span><div class="v">2,8&nbsp;s</div><p>pour les 146&nbsp;275 lignes, lecture du CSV comprise</p></div>
+    <div class="tile"><span class="label">Mémoire Redis</span><div class="v">141&nbsp;Mo</div><p>pour 98&nbsp;Mo de CSV (146&nbsp;275 clés JSON)</p></div>
+    <div class="tile"><span class="label">Effet du pipeline</span><div class="v">×12,9</div><p>en lecture sur 100&nbsp;000 lignes&#8239;: un gain réseau, pas un gain Redis</p></div>
+  </div>
+  <div class="foot"><span>python main.py benchmark --rows 100000 --batch-size 500 · python main.py compare</span><span>06 / 09</span></div>
+</section>
+
+<!-- 7 · Redis face à PostgreSQL -->
+<section class="slide">
+  <div class="top"><span><b>03</b> · Redis face à PostgreSQL</span><span>Redis — Question 4</span></div>
+  <h2>Face à PostgreSQL indexé, lire une clé&#8239;: <em>match nul</em></h2>
+  <div class="vs">
+    <div>
+      <p class="chart-title">Même client Python, mêmes données</p>
+      <p class="chart-sub">10&nbsp;000 clés aléatoires · données en mémoire · médiane de 5 passes</p>
+      <table class="bench vs-table">
+        <thead><tr><th></th><th><i style="background:var(--red)"></i>Redis</th><th><i style="background:var(--blue)"></i>PostgreSQL</th></tr></thead>
+        <tbody>
+          <tr><td>Lecture, latence p50</td><td>93&nbsp;µs</td><td>82&nbsp;µs</td></tr>
+          <tr><td>Lecture, latence p99</td><td>114&nbsp;µs</td><td>116&nbsp;µs</td></tr>
+          <tr><td>Lecture par lots de 500</td><td>147&nbsp;363/s</td><td>156&nbsp;756/s</td></tr>
+          <tr><td>32 clients en parallèle</td><td>36&nbsp;709/s</td><td>32&nbsp;245/s</td></tr>
+          <tr><td>Travail serveur par lecture</td><td>3,8&nbsp;µs</td><td>5,4&nbsp;µs</td></tr>
+          <tr><td>Import des 146&nbsp;275 lignes</td><td>1,83&nbsp;s<small>pipeline</small></td><td>1,03&nbsp;s<small>COPY</small></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div>
+      <p class="chart-title">Capacité des serveurs seuls</p>
+      <p class="chart-sub">milliers d’opérations/s selon le nombre de clients · redis-benchmark et pgbench dans les conteneurs</p>
+      <div class="legend"><span><i class="sq" style="background:var(--red)"></i>Redis</span><span><i class="sq" style="background:var(--blue)"></i>PostgreSQL</span></div>
+      <svg id="native" width="600" height="236" role="img" aria-label="Capacité des serveurs en lecture et en mise à jour"></svg>
+      <p class="note">Redis exécute toutes les commandes sur <strong>un seul cœur</strong>&#8239;: il plafonne vers 261&nbsp;k/s. PostgreSQL lance un processus par connexion et profite des 10 cœurs en lecture. En écriture, Redis reste devant.</p>
+    </div>
+  </div>
+  <div class="foot"><span>python main.py compare --rows 10000 --clients 1 8 32 --runs 5 · redis-benchmark · pgbench -M prepared</span><span>07 / 09</span></div>
+</section>
+
+<!-- 8 · Redis en cache -->
+<section class="slide">
+  <div class="top"><span><b>03</b> · Le vrai usage&#8239;: Redis en cache</span><span>Redis — Question 4</span></div>
+  <h2>Le vrai gain&#8239;: <em>ne pas recalculer</em></h2>
+  <div class="cache">
+    <div>
+      <p class="chart-title">Tableau de bord&#8239;: préoccupations par pays (question A1BIS)</p>
+      <p class="chart-sub">740 lignes extraites des 146&nbsp;275 · temps par appel en ms · médiane</p>
+      <svg id="cache" width="560" height="258" role="img" aria-label="Temps par appel avec et sans cache Redis"></svg>
+    </div>
+    <div>
+      <div class="cap"><span>Cache « à la demande » (cache-aside), simplifié</span></div>
+<pre class="codeblock">def tableau_de_bord():
+    valeur = redis.<span class="h">get</span>(CLE)                  <span class="c"># 0,23 ms</span>
+    if valeur is not None:
+        return json.loads(valeur)
+    lignes = pg.<span class="h">execute</span>(REQUETE).fetchall()  <span class="c"># 18,2 ms</span>
+    redis.<span class="h">set</span>(CLE, json.dumps(lignes), ex=<span class="s">60</span>)  <span class="c"># TTL 60 s</span>
+    return lignes</pre>
+      <div class="big-gain"><b>×78</b><span>quand la réponse est déjà en cache. En moyenne, ×9 si 90&nbsp;% des appels la trouvent, ×44 à 99&nbsp;%.</span></div>
+      <p class="note">PostgreSQL passe 18,3&nbsp;ms à parcourir les 146&nbsp;275 documents. Redis ne fait que rendre le résultat déjà calculé.</p>
+    </div>
+  </div>
+  <div class="foot"><span>python main.py compare · scénario 4</span><span>08 / 09</span></div>
+</section>
+
+<!-- 9 · En résumé -->
+<section class="slide">
+  <div class="top"><span><b>Synthèse</b></span><span>Redis — Question 4</span></div>
+  <h2>En résumé</h2>
+  <div class="sum">
+    <div>
+      <span class="n">01 · Qu’est-ce que c’est&#8239;?</span>
+      <h3>Une base clé-valeur en mémoire</h3>
+      <p>Des valeurs typées (chaînes, hashes, listes, ensembles triés, streams, JSON), des commandes atomiques, une persistance optionnelle sur disque.</p>
+      <div class="key"><span>Commandes vues</span>SET · GET · HSET · ZADD · JSON.SET</div>
+    </div>
+    <div>
+      <span class="n">02 · Pourquoi&#8239;?</span>
+      <h3>Pas pour lire plus vite qu’une base indexée</h3>
+      <p>Sur des données en mémoire, PostgreSQL fait jeu égal. Redis sert à <strong>éviter de recalculer</strong>, à absorber des <strong>écritures légères</strong> (sessions, compteurs) et à profiter du TTL et de ses structures.</p>
+      <div class="key"><span>Mesuré</span>cache ×78 · mise à jour ×5 (1 client)</div>
+    </div>
+    <div>
+      <span class="n">03 · Exemples</span>
+      <h3>Cache, sessions, files, temps réel</h3>
+      <p>Chez nous&#8239;: le tableau de bord A1BIS servi en <strong>0,23&nbsp;ms</strong> au lieu de <strong>18,2&nbsp;ms</strong>, et 146&nbsp;275 lignes tenues dans <strong>141&nbsp;Mo de RAM</strong>.</p>
+      <div class="key"><span>À retenir</span>Redis complète PostgreSQL, il ne le remplace pas</div>
+    </div>
+  </div>
+  <div class="conditions">
+    <span class="label">Conditions de test</span>
+    <span>MacBook Apple M4 (10 cœurs) · Redis Stack 7.4.7 et PostgreSQL 16.15 dans Docker (OrbStack), en local · Python 3.9.6, redis-py 5.0.8, psycopg 3.2.13 · PostgreSQL&#8239;: <code>synchronous_commit=off</code>, <code>shared_buffers=256MB</code> · données en mémoire · médiane de 5 passes alternées. Machine de travail&#8239;: jusqu’à ±30&nbsp;% d’écart entre passes, à lire comme des ordres de grandeur.</span>
+  </div>
+  <div class="foot"><span>Redis — Question 4</span><span>09 / 09</span></div>
+</section>
+
+<script>
+// aperçu : redis-q4.html#s3 n'affiche que la slide 3
+if (/^#s\d+$/.test(location.hash)) {
+  const k = +location.hash.slice(2);
+  document.querySelectorAll(".slide").forEach((s, i) => { if (i + 1 !== k) s.remove(); });
+  document.body.style.cssText = "padding:0;background:var(--paper)";
+  document.querySelector(".slide").style.cssText = "margin:0;box-shadow:none";
+}
+const NS = "http://www.w3.org/2000/svg";
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const C = { red: css("--red"), blue: css("--blue"), gray: css("--gray"), grid: css("--grid"), ink: css("--ink"), paper: css("--paper"), muted: css("--muted"), rule: css("--rule") };
+const fr = n => n.toLocaleString("fr-FR").replace(/[ \s]/g, " ");
+const frd = (n, d) => n.toFixed(d).replace(".", ",");
+const k = n => `${Math.round(n / 1000)} k`;
+// Résultats mesurés (injectés depuis deck/compare-results.json et la série redis-benchmark / pgbench)
+const RESULTS = {"point_reads": {"redis": {"ops_per_s": 11024.716131392162, "p50_us": 92.83400000015263, "p95_us": 105.70900000317351, "p99_us": 113.54099999749678, "server_us": 3.77, "batch_ops_per_s": 147363.48235941725}, "postgres": {"ops_per_s": 11561.914432752543, "p50_us": 82.49999999776492, "p95_us": 107.70800000159397, "p99_us": 115.62499999939746, "server_us": 5.440666799999981, "batch_ops_per_s": 156756.39664070218}}, "cache": {"rows": 740, "cached_bytes": 33337, "postgres_ms": 18.24752049999745, "postgres_server_ms": 18.3248512, "miss_ms": 18.207771000007256, "hit_ms": 0.2346670000008544, "mean_ms_at_90": 2.0319774000014945, "mean_ms_at_99": 0.4143980400009184}, "native": {"pg SELECT": {"1": 113066, "8": 392905, "32": 321824}, "pg UPDATE": {"1": 31350, "8": 143220, "32": 157751}, "redis JSON.GET": {"1": 160000, "8": 193399, "32": 260643}, "redis JSON.SET": {"1": 161290, "8": 199867, "32": 260779}, "redis PING": {"1": 248756, "8": 272529, "32": 428204}}};
+
+function el(svg, tag, attrs, text) {
+  const e = document.createElementNS(NS, tag);
+  for (const a in attrs) e.setAttribute(a, attrs[a]);
+  if (text !== undefined) e.textContent = text;
+  svg.appendChild(e);
+  return e;
+}
+// barre horizontale : carrée sur la ligne de base, bout arrondi de 4px
+function hbar(x, y, w, h, r = 4) {
+  r = Math.min(r, w);
+  return `M${x},${y} h${w - r} a${r},${r} 0 0 1 ${r},${r} v${h - 2 * r} a${r},${r} 0 0 1 ${-r},${r} h${-(w - r)} z`;
+}
+// colonne : carrée sur la ligne de base, haut arrondi de 4px
+function vbar(x, yBase, w, h, r = 4) {
+  r = Math.min(r, h);
+  return `M${x},${yBase} v${-(h - r)} a${r},${r} 0 0 1 ${r},${-r} h${w - 2 * r} a${r},${r} 0 0 1 ${r},${r} v${h - r} z`;
+}
+
+// ---- slide 6 · débit Redis seul (100 000 lignes, médianes de main.py benchmark)
+(() => {
+  const svg = document.getElementById("bars");
+  if (!svg) return;
+  const data = [
+    { label: "Lecture GET pipeline", v: 170379, c: C.red },
+    { label: "Écriture JSON.SET pipeline", v: 82160, c: C.gray },
+    { label: "Lecture GET séquentielle", v: 13165, c: C.gray },
+  ];
+  const W = 430, max = 200000, rowH = 66, top = 6, bh = 22;
+  const sx = v => v / max * W;
+  for (const t of [0, 50000, 100000, 150000, 200000]) {
+    el(svg, "line", { x1: sx(t), x2: sx(t), y1: top, y2: top + rowH * 3, stroke: t ? C.grid : C.rule, "stroke-width": 1 });
+    el(svg, "text", { x: sx(t), y: top + rowH * 3 + 18, class: "tick", "text-anchor": t ? "middle" : "start" }, t ? k(t) : "0");
+  }
+  data.forEach((d, i) => {
+    const y = top + i * rowH;
+    el(svg, "text", { x: 0, y: y + 15, class: "lab" }, d.label);
+    el(svg, "path", { d: hbar(0, y + 24, sx(d.v), bh), fill: d.c });
+    el(svg, "text", { x: sx(d.v) + 10, y: y + 40, class: "val" }, fr(d.v) + "/s");
+  });
+})();
+
+// ---- slide 6 · où passe le temps d'une lecture
+(() => {
+  const svg = document.getElementById("split");
+  if (!svg) return;
+  const total = RESULTS.point_reads.redis.p50_us, server = RESULTS.point_reads.redis.server_us;
+  const W = 540, sx = v => v / total * W, y = 6, h = 24;
+  const ws = Math.max(sx(server), 4);
+  el(svg, "path", { d: hbar(0, y, ws, h, 0), fill: C.red });
+  el(svg, "path", { d: hbar(ws + 2, y, W - ws - 2, h), fill: C.gray });
+  el(svg, "line", { x1: 1, x2: 1, y1: y + h + 4, y2: y + h + 14, stroke: C.ink, "stroke-width": 1 });
+  el(svg, "text", { x: 0, y: y + h + 30, class: "val" }, `Redis : ${frd(server, 1)} µs`);
+  el(svg, "text", { x: W, y: y + h + 30, class: "lab", "text-anchor": "end" }, `réseau + client Python : ≈ ${Math.round(total - server)} µs`);
+})();
+
+// ---- slide 7 · capacité des serveurs (outils natifs)
+(() => {
+  const svg = document.getElementById("native");
+  if (!svg) return;
+  const N = RESULTS.native, clients = ["1", "8", "32"];
+  const panels = [
+    { title: "Lecture par clé", redis: N["redis JSON.GET"], pg: N["pg SELECT"] },
+    { title: "Mise à jour d’un champ", redis: N["redis JSON.SET"], pg: N["pg UPDATE"] },
+  ];
+  const max = 600000, L = 40, T = 26, H = 168, PW = 270, gap = 20, bw = 26;
+  const sy = v => T + H - v / max * H;
+  panels.forEach((p, pi) => {
+    const x0 = L + pi * (PW + gap);
+    el(svg, "text", { x: x0, y: 12, class: "lab", style: "font-weight:600;fill:" + C.ink }, p.title);
+    for (const t of [0, 200000, 400000, 600000]) {
+      el(svg, "line", { x1: x0, x2: x0 + PW, y1: sy(t), y2: sy(t), stroke: t ? C.grid : C.rule, "stroke-width": 1 });
+      if (pi === 0) el(svg, "text", { x: L - 8, y: sy(t) + 4, class: "tick", "text-anchor": "end" }, t ? k(t) : "0");
+    }
+    const slot = PW / clients.length;
+    clients.forEach((c, ci) => {
+      const cx = x0 + slot * ci + slot / 2;
+      [["redis", C.red, -1], ["pg", C.blue, 1]].forEach(([b, color, side]) => {
+        const v = p[b][c], bx = side < 0 ? cx - bw - 2 : cx + 2;
+        el(svg, "path", { d: vbar(bx, sy(0), bw, sy(0) - sy(v)), fill: color });
+        el(svg, "text", { x: bx + bw / 2, y: sy(v) - 6, class: "valsm", "text-anchor": "middle" }, Math.round(v / 1000));
+      });
+      el(svg, "text", { x: cx, y: T + H + 18, class: "tick", "text-anchor": "middle" }, `${c} client${c === "1" ? "" : "s"}`);
+    });
+  });
+})();
+
+// ---- slide 8 · cache Redis devant PostgreSQL
+(() => {
+  const svg = document.getElementById("cache");
+  if (!svg) return;
+  const c = RESULTS.cache;
+  const data = [
+    { label: "PostgreSQL à chaque appel", v: c.postgres_ms, color: C.blue },
+    { label: "Avec cache Redis, 90 % de hits", v: c.mean_ms_at_90, color: C.red },
+    { label: "Avec cache Redis, 99 % de hits", v: c.mean_ms_at_99, color: C.red },
+    { label: "Réponse trouvée dans le cache", v: c.hit_ms, color: C.red },
+  ];
+  const max = Math.ceil(c.postgres_ms / 5) * 5, W = 440, rowH = 56, top = 4, bh = 20;
+  const sx = v => v / max * W;
+  for (let t = 0; t <= max; t += 5) {
+    el(svg, "line", { x1: sx(t), x2: sx(t), y1: top, y2: top + rowH * data.length, stroke: t ? C.grid : C.rule, "stroke-width": 1 });
+    el(svg, "text", { x: sx(t), y: top + rowH * data.length + 18, class: "tick", "text-anchor": t ? "middle" : "start" }, t ? `${t} ms` : "0");
+  }
+  data.forEach((d, i) => {
+    const y = top + i * rowH;
+    el(svg, "text", { x: 0, y: y + 14, class: "lab" }, d.label);
+    el(svg, "path", { d: hbar(0, y + 22, Math.max(sx(d.v), 4), bh), fill: d.color });
+    el(svg, "text", { x: Math.max(sx(d.v), 4) + 10, y: y + 37, class: "val" }, `${frd(d.v, d.v < 1 ? 2 : 1)} ms`);
+  });
+})();
+</script>
+</body>
+</html>
